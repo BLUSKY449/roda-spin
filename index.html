@@ -134,10 +134,8 @@
 
       ctx.lineWidth=2;
 
-      // Estimasi hub untuk posisi teks (agar tak terlalu dekat hub)
+      // Estimasi hub (untuk referensi saja; teks kita taruh lebih dalam agar sejajar)
       const hubR_est = Math.max(18, Math.floor(width*0.055));
-      const rimMargin = Math.max(r*0.12, Math.floor(width*0.06)); // jarak aman dari tepi
-      const hubPadding = Math.max(Math.floor(width*0.08), 20);     // jarak aman dari hub
 
       for(let i=0;i<n;i++){
         const a0=i*slice, a1=a0+slice;
@@ -147,7 +145,7 @@
         ctx.fillStyle=colors[i%colors.length]; ctx.fill();
         ctx.strokeStyle='#fff'; ctx.stroke();
 
-        // label: horizontal, responsif, jarak seragam
+        // label: sejajar & tidak keluar lingkaran
         const mid=a0+slice/2;
         ctx.save();
         ctx.textBaseline='middle';
@@ -156,12 +154,12 @@
         ctx.fillStyle='#0b0f1a';
         ctx.textAlign='center';
 
-        // radius teks = paling kecil antara (r - margin tepi) tapi paling tidak sejauh hub + padding
-        let textRadius = Math.max(r - rimMargin, hubR_est + hubPadding);
+        // radius teks dibuat lebih dalam supaya aman (sejajar semua sektor)
+        const textRadius = r * 0.55;
 
         const text=labels[i] || `Bagian ${i+1}`;
         // kecilkan font jika masih kepanjangan
-        while(ctx.measureText(text).width > r*1.15 && fontSize>12){
+        while(ctx.measureText(text).width > r*1.0 && fontSize>12){
           fontSize -= 1;
           ctx.font=`bold ${fontSize}px Arial, Helvetica, sans-serif`;
         }
