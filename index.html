@@ -18,7 +18,7 @@
     #confetti{position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;z-index:5}
     .controls{display:grid;gap:10px}
     .btns{display:flex;gap:10px;flex-wrap:wrap}
-    button{appearance:none;border:1px solid rgba(255,255,255,.12);background:#0d1530;color:#e6edf7;border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+    button{appearance:none;border:1px solid rgba(255,255,255,.12);background:#0d1530;color:#e6edf7;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
     button.primary{background:linear-gradient(90deg,#2563eb,#7c3aed);border:none}
     button.secondary{background:#1f2937;border:1px solid rgba(255,255,255,.18)}
     button.danger{background:#b91c1c;border:none}
@@ -29,7 +29,7 @@
     .winner-content h2{margin:0 0 12px;font-size:24px;color:#2563eb}
     .winner-content p{font-size:28px;font-weight:bold;margin:0 0 16px}
     .winner-actions{display:flex;gap:10px;justify-content:center}
-    .winner-content button{padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:700}
+    .winner-content button{padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600}
   </style>
 </head>
 <body>
@@ -63,7 +63,6 @@
       </div>
     </div>
   </div>
-
   <script>
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
@@ -77,7 +76,6 @@
     const confetti = document.getElementById('confetti');
     const cctx = confetti.getContext('2d');
 
-    // === Responsif & tajam di retina
     function fitCanvas(){
       const container = document.querySelector('.pointer');
       const maxSize = Math.min(container.clientWidth || 600, Math.floor(window.innerHeight * 0.75) || 600, 720);
@@ -89,9 +87,9 @@
       confetti.style.width = size + 'px';
       confetti.style.height = size + 'px';
 
-      canvas.width  = Math.floor(size * dpr);
+      canvas.width = Math.floor(size * dpr);
       canvas.height = Math.floor(size * dpr);
-      confetti.width  = Math.floor(size * dpr);
+      confetti.width = Math.floor(size * dpr);
       confetti.height = Math.floor(size * dpr);
 
       ctx.setTransform(1,0,0,1,0,0);
@@ -99,151 +97,69 @@
 
       draw();
     }
+
     window.addEventListener('resize', fitCanvas);
     window.addEventListener('orientationchange', fitCanvas);
 
-    // === Audio
-    let audioCtx=null, unlocked=false;
-    function ensureAudio(){ if(!audioCtx){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx.state==='suspended'){ audioCtx.resume(); } unlocked=true; }
+    // AUDIO
+    let audioCtx = null; let unlocked = false;
+    function ensureAudio(){ if(!audioCtx){ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx.state==='suspended'){ audioCtx.resume(); } unlocked = true; }
     function playTick(){ if(!unlocked) return; const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='square'; o.frequency.setValueAtTime(1400,audioCtx.currentTime); g.gain.setValueAtTime(0.0001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.2,audioCtx.currentTime+0.001); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.06); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.065); }
     function playWin(){ if(!unlocked) return; const now=audioCtx.currentTime; const g=audioCtx.createGain(); g.gain.setValueAtTime(0.0001,now); g.gain.exponentialRampToValueAtTime(0.6,now+0.02); g.gain.exponentialRampToValueAtTime(0.0001,now+1.2); g.connect(audioCtx.destination); [784,987,1175].forEach((f,i)=>{ const o=audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(f,now); o.connect(g); o.start(now+i*0.02); o.stop(now+1.2); }); }
 
-    // === Data roda
-    let labels = ["Kelompok I","Kelompok II","Kelompok III"];
-    let rotation = 0;
-    let spinning = false;
-    let colors = genColors();
-    let lastTickIdx = -1;
+    // DATA RODA
+    let labels=["Kelompok I","Kelompok II","Kelompok III"];
+    let rotation=0; let spinning=false; let colors=genColors(); let lastTickIdx=-1;
     function genColors(){ const arr=[]; const n=3; const s=65, l=50; for(let i=0;i<n;i++){ const h=Math.round((i*360)/n); arr.push(`hsl(${h}, ${s}%, ${l}%)`);} return arr; }
     function shuffleColors(){ colors=colors.sort(()=>Math.random()-0.5); draw(); }
 
-    // === Gambar roda
-    function draw(){
-      const width=canvas.width, height=canvas.height;
-      const cx=width/2, cy=height/2;
-      const r=Math.min(cx,cy)-20;
-      ctx.clearRect(0,0,width,height);
-
-      const n=labels.length, slice=(Math.PI*2)/n;
-      ctx.save();
-      ctx.translate(cx,cy);
-
-      // Presisi: acuan atas (-90°) -> sektor rapi relatif ke panah
-      const baseOffset = -Math.PI/2;
-      ctx.rotate(rotation + baseOffset);
-
-      ctx.lineWidth=2;
+    // GAMBAR RODA
+    function draw(){ const width=canvas.width, height=canvas.height; const cx=width/2, cy=height/2; const r=Math.min(cx,cy)-20; ctx.clearRect(0,0,width,height);
+      const n=labels.length, slice=(Math.PI*2)/n; 
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(rotation - Math.PI/2); ctx.lineWidth=2; // -90 derajat agar label lebih presisi
       for(let i=0;i<n;i++){
         const a0=i*slice, a1=a0+slice;
-
-        // sektor
+        // sector
         ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r,a0,a1); ctx.closePath();
         ctx.fillStyle=colors[i%colors.length]; ctx.fill();
         ctx.strokeStyle='#fff'; ctx.stroke();
-
-        // label: horizontal, responsif, di tengah sektor
-        const mid=a0+slice/2;
-        ctx.save();
+        // label — responsif dan selalu horizontal
+        const mid=a0+slice/2; ctx.save();
         ctx.textBaseline='middle';
-        let fontSize=Math.max(14, Math.floor(width*0.06));
-        ctx.font=`bold ${fontSize}px Arial, Helvetica, sans-serif`;
-        ctx.fillStyle='#0b0f1a';
-        ctx.textAlign='center';
-        const textRadius=r*0.70;
-        const text=labels[i] || `Bagian ${i+1}`;
-        while(ctx.measureText(text).width > r*1.2 && fontSize>12){
+        let fontSize = Math.max(14, Math.floor(width*0.06));
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.fillStyle = '#0b0f1a';
+        ctx.textAlign = 'center';
+        const textRadius = r * 0.65;
+        const text = labels[i] || `Bagian ${i+1}`;
+        while (ctx.measureText(text).width > r*1.2 && fontSize > 12){
           fontSize -= 1;
-          ctx.font=`bold ${fontSize}px Arial, Helvetica, sans-serif`;
+          ctx.font = `bold ${fontSize}px Arial`;
         }
-        // posisi titik teks persis di tengah sektor
         ctx.fillText(text, Math.cos(mid)*textRadius, Math.sin(mid)*textRadius);
         ctx.restore();
       }
       ctx.restore();
+      // hub
+      const hubR = Math.max(16, Math.floor(width*0.05));
+      ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2); ctx.fillStyle='#0b1220'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2, Math.floor(width*0.006)); ctx.stroke();
+      // pointer lebih besar
+      const pW=width*0.25, pH=height*0.28; ctx.beginPath(); ctx.moveTo(cx, cy-r-10); ctx.lineTo(cx-pW/2, cy-r-10-pH); ctx.lineTo(cx+pW/2, cy-r-10-pH); ctx.closePath(); ctx.fillStyle='#ffffff'; ctx.fill(); }
 
-      // hub tengah (skala dinamis)
-      const hubR=Math.max(18, Math.floor(width*0.055));
-      ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2);
-      ctx.fillStyle='#0b1220'; ctx.fill();
-      ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2, Math.floor(width*0.006)); ctx.stroke();
+    function currentIndex(){ const n=labels.length, slice=(Math.PI*2)/n; let a=((Math.PI*2-(rotation%(Math.PI*2)))+Math.PI*2)%(Math.PI*2); return Math.floor(a/slice)%n; }
 
-      // panah besar di atas (dibesarkan)
-      const pW=width*0.28, pH=height*0.30;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r - 10);
-      ctx.lineTo(cx - pW/2, cy - r - 10 - pH);
-      ctx.lineTo(cx + pW/2, cy - r - 10 - pH);
-      ctx.closePath();
-      ctx.fillStyle='#ffffff';
-      ctx.fill();
-    }
-
-    // === Hitung index pemenang (kompensasi baseOffset)
-    function currentIndex(){
-      const n=labels.length; const slice=(Math.PI*2)/n;
-      let a=((Math.PI*2 - (rotation % (Math.PI*2))) + Math.PI*2) % (Math.PI*2);
-      a=(a + (Math.PI/2)) % (Math.PI*2); // kompensasi -90° saat gambar
-      return Math.floor(a / slice) % n;
-    }
-
-    function spin(){
-      ensureAudio();
-      if(spinning || labels.length < 2) return;
-      spinning = true; resEl.textContent='Memutar…';
-      spinBtn.disabled = shuffleBtn.disabled = resetBtn.disabled = true;
-      lastTickIdx = currentIndex();
-
-      const startRot=rotation;
-      const target=startRot+(6+Math.floor(Math.random()*4))*Math.PI*2+Math.random()*Math.PI*2;
-      const dur=4000; const t0=performance.now();
-
-      function frame(t){
-        const p=Math.min(1,(t-t0)/dur);
-        const eased=1-Math.pow(1-p,3);
-        rotation=startRot+(target-startRot)*eased;
-        draw();
-        const idxNow=currentIndex();
-        if(idxNow!==lastTickIdx){ playTick(); lastTickIdx=idxNow; }
-        if(p<1){ requestAnimationFrame(frame); }
-        else{
-          spinning=false;
-          const idx=currentIndex();
-          const name=labels[idx];
-          resEl.textContent='Hasil: '+name+' 🎉';
-          spinBtn.disabled = shuffleBtn.disabled = resetBtn.disabled = false;
-          playWin(); showWinner(name, idx); startConfetti();
-        }
-      }
-      requestAnimationFrame(frame);
-    }
+    function spin(){ ensureAudio(); if(spinning||labels.length<2) return; spinning=true; resEl.textContent='Memutar…'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=true; lastTickIdx=currentIndex(); const startRot=rotation; const target=startRot+(6+Math.floor(Math.random()*4))*Math.PI*2+Math.random()*Math.PI*2; const dur=4000; const t0=performance.now(); function frame(t){ const p=Math.min(1,(t-t0)/dur); const eased=1-Math.pow(1-p,3); rotation=startRot+(target-startRot)*eased; draw(); const idxNow=currentIndex(); if(idxNow!==lastTickIdx){ playTick(); lastTickIdx=idxNow;} if(p<1){ requestAnimationFrame(frame);} else{ spinning=false; const idx=currentIndex(); const name=labels[idx]; resEl.textContent='Hasil: '+name+' 🎉'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=false; playWin(); showWinner(name, idx); startConfetti(); }} requestAnimationFrame(frame); }
 
     function reset(){ labels=["Kelompok I","Kelompok II","Kelompok III"]; rotation=0; colors=genColors(); draw(); resEl.textContent='Siap diputar…'; }
 
-    // === Confetti
+    // CONFETTI
     let lastWinnerIndex=-1; let confettiParts=[]; let confettiRAF=null; let confettiEndAt=0;
-    function startConfetti(){
-      const N=200; confettiParts=[];
-      for(let i=0;i<N;i++){
-        confettiParts.push({x:canvas.width/2+(Math.random()-0.5)*80,y:40+Math.random()*40,vx:(Math.random()-0.5)*6,vy:2+Math.random()*4,sz:6+Math.random()*6,rot:Math.random()*Math.PI,vr:(Math.random()-0.5)*0.3,color:`hsl(${Math.floor(Math.random()*360)} 80% 60%)`,life:2.2+Math.random()*0.8});
-      }
-      confettiEndAt=performance.now()+2500; if(confettiRAF) cancelAnimationFrame(confettiRAF); loopConfetti();
-    }
-    function loopConfetti(){
-      const now=performance.now();
-      cctx.clearRect(0,0,confetti.width,confetti.height);
-      for(const p of confettiParts){
-        p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.rot+=p.vr; p.life-=1/60;
-        cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot);
-        cctx.fillStyle=p.color; cctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*0.6); cctx.restore();
-      }
-      confettiParts=confettiParts.filter(p=>p.y<confetti.height+20 && p.life>0);
-      if(now<confettiEndAt||confettiParts.length){ confettiRAF=requestAnimationFrame(loopConfetti); }
-      else { cctx.clearRect(0,0,confetti.width,confetti.height); confettiRAF=null; }
-    }
+    function startConfetti(){ const N=200; confettiParts=[]; for(let i=0;i<N;i++){ confettiParts.push({x:canvas.width/2+(Math.random()-0.5)*80,y:40+Math.random()*40,vx:(Math.random()-0.5)*6,vy:2+Math.random()*4,sz:6+Math.random()*6,rot:Math.random()*Math.PI,vr:(Math.random()-0.5)*0.3,color:`hsl(${Math.floor(Math.random()*360)} 80% 60%)`,life:2.2+Math.random()*0.8});} confettiEndAt=performance.now()+2500; if(confettiRAF) cancelAnimationFrame(confettiRAF); loopConfetti(); }
+    function loopConfetti(){ const now=performance.now(); cctx.clearRect(0,0,confetti.width,confetti.height); for(const p of confettiParts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.rot+=p.vr; p.life-=1/60; cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot); cctx.fillStyle=p.color; cctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*0.6); cctx.restore(); } confettiParts=confettiParts.filter(p=>p.y<confetti.height+20&&p.life>0); if(now<confettiEndAt||confettiParts.length){ confettiRAF=requestAnimationFrame(loopConfetti);} else{ cctx.clearRect(0,0,confetti.width,confetti.height); confettiRAF=null;} }
 
     function showWinner(name, idx){ lastWinnerIndex=idx; winnerNameEl.textContent=name; winnerBox.style.display='flex'; }
-    function closeWinner(){ winnerBox.style.display='none'; cctx.clearRect(0,0,confetti.width,confetti.height); if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF=null; } }
-    function removeWinner(){ if(lastWinnerIndex>=0){ labels.splice(lastWinnerIndex,1); rotation=0; draw(); closeWinner(); resEl.textContent = labels.length>1 ? 'Pemenang dihapus. Siap putar lagi…' : 'Tinggal 1 item.'; } }
+    function closeWinner(){ winnerBox.style.display='none'; cctx.clearRect(0,0,confetti.width,confetti.height); if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF=null;} }
+    function removeWinner(){ if(lastWinnerIndex>=0){ labels.splice(lastWinnerIndex,1); rotation=0; draw(); closeWinner(); resEl.textContent= labels.length>1 ? 'Pemenang dihapus. Siap putar lagi…' : 'Tinggal 1 item.'; }}
 
     // init
     fitCanvas();
