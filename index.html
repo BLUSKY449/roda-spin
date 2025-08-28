@@ -13,9 +13,8 @@
     .grid{display:grid;gap:16px;grid-template-columns:1fr}
     h1{margin:0 0 6px;font-size:22px;letter-spacing:.2px}
     p.sub{margin:0 0 8px;color:#94a3b8}
-    .pointer{position:relative;width:600px;margin-inline:auto}
-    /* Canvas JANGAN diberi background putih supaya tidak tampak lingkaran putih ketika gambar gagal */
-    #wheel{display:block;margin:auto;border-radius:0}
+    .pointer{position:relative;max-width:100%;margin-inline:auto}
+    #wheel, #confetti {display:block;margin:auto;max-width:100%;height:auto}
     #confetti{position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;z-index:5}
     .controls{display:grid;gap:10px}
     .btns{display:flex;gap:10px;flex-wrap:wrap}
@@ -40,8 +39,8 @@
       <p class="sub">Tekan <b>PUTAR</b> untuk memilih salah satu.</p>
       <div class="grid">
         <div class="pointer">
-          <canvas id="wheel" width="600" height="600"></canvas>
-          <canvas id="confetti" width="600" height="600"></canvas>
+          <canvas id="wheel"></canvas>
+          <canvas id="confetti"></canvas>
         </div>
         <div class="controls">
           <div class="btns">
@@ -74,14 +73,18 @@
     const winnerBox = document.getElementById('winnerBox');
     const winnerNameEl = document.getElementById('winnerName');
 
-    // Confetti overlay
     const confetti = document.getElementById('confetti');
     const cctx = confetti.getContext('2d');
 
-    // Ukuran tetap
-    const CANVAS_SIZE = 600;
-    canvas.width = CANVAS_SIZE; canvas.height = CANVAS_SIZE;
-    confetti.width = CANVAS_SIZE; confetti.height = CANVAS_SIZE;
+    function resizeCanvas(){
+      const size = Math.min(window.innerWidth, window.innerHeight) - 60;
+      const s = Math.max(280, Math.min(size, 600)); // antara 280 dan 600px
+      canvas.width = s; canvas.height = s;
+      confetti.width = s; confetti.height = s;
+      draw();
+    }
+
+    window.addEventListener('resize', resizeCanvas);
 
     // ===== AUDIO =====
     let audioCtx = null; let unlocked = false;
@@ -92,56 +95,22 @@
     // ===== DATA RODA =====
     let labels=["Kelompok I","Kelompok II","Kelompok III"];
     let rotation=0; let spinning=false; let colors=genColors(); let lastTickIdx=-1;
-    function genColors(){
-      const arr=[]; const n=3; const s=65, l=50;
-      for(let i=0;i<n;i++){
-        const h = Math.round((i*360)/n);
-        // format HSL klasik agar kompatibel di semua browser
-        arr.push(`hsl(${h}, ${s}%, ${l}%)`);
-      }
-      return arr;
-    }
+    function genColors(){ const arr=[]; const n=3; const s=65, l=50; for(let i=0;i<n;i++){ const h=Math.round((i*360)/n); arr.push(`hsl(${h}, ${s}%, ${l}%)`);} return arr; }
     function shuffleColors(){ colors=colors.sort(()=>Math.random()-0.5); draw(); }
 
     // ===== GAMBAR RODA =====
-    function draw(){
-      const width=canvas.width, height=canvas.height; const cx=width/2, cy=height/2; const r=Math.min(cx,cy)-20; ctx.clearRect(0,0,width,height);
-
-      // lingkaran dasar
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = '#0e172a'; ctx.fill();
-      // ring tepi
-      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.lineWidth = 6; ctx.strokeStyle = '#ffffff'; ctx.stroke();
-
-      const n=labels.length, slice=(Math.PI*2)/n; ctx.save(); ctx.translate(cx,cy); ctx.rotate(rotation); ctx.lineWidth=2;
-      for(let i=0;i<n;i++){
-        const a0=i*slice, a1=a0+slice;
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r-3,a0,a1); ctx.closePath();
-        ctx.fillStyle=colors[i%colors.length] || '#38bdf8';
-        ctx.fill();
-        ctx.strokeStyle='#0b1220'; ctx.stroke();
-        // label
-        ctx.save(); const mid=a0+slice/2; ctx.rotate(mid); ctx.textAlign='right'; ctx.fillStyle='#0b0f1a'; ctx.font='bold 28px system-ui, Arial'; ctx.fillText(labels[i]||`Bagian ${i+1}`, (r-10)*0.95, 0); ctx.restore();
-      }
-      ctx.restore();
-
-      // hub tengah
-      ctx.beginPath(); ctx.arc(cx,cy,20,0,Math.PI*2); ctx.fillStyle='#0b1220'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke();
-
-      // panah putih di atas roda
-      const pW=110, pH=130; ctx.beginPath(); ctx.moveTo(cx, cy-r-10); ctx.lineTo(cx-pW/2, cy-r-10-pH); ctx.lineTo(cx+pW/2, cy-r-10-pH); ctx.closePath(); ctx.fillStyle='#ffffff'; ctx.fill();
-    }
+    function draw(){ const width=canvas.width, height=canvas.height; const cx=width/2, cy=height/2; const r=Math.min(cx,cy)-20; ctx.clearRect(0,0,width,height);
+      const n=labels.length, slice=(Math.PI*2)/n; ctx.save(); ctx.translate(cx,cy); ctx.rotate(rotation); ctx.lineWidth=2; for(let i=0;i<n;i++){ const a0=i*slice, a1=a0+slice; ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r,a0,a1); ctx.closePath(); ctx.fillStyle=colors[i%colors.length]; ctx.fill(); ctx.strokeStyle='#fff'; ctx.stroke(); ctx.save(); const mid=a0+slice/2; ctx.rotate(mid); ctx.textAlign='right'; ctx.fillStyle='#0b0f1a'; ctx.font='bold 28px system-ui, Arial'; ctx.fillText(labels[i]||`Bagian ${i+1}`, r*0.9, 0); ctx.restore(); } ctx.restore(); ctx.beginPath(); ctx.arc(cx,cy,20,0,Math.PI*2); ctx.fillStyle='#0b1220'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.stroke(); const pW=width*0.18, pH=height*0.2; ctx.beginPath(); ctx.moveTo(cx, cy-r-10); ctx.lineTo(cx-pW/2, cy-r-10-pH); ctx.lineTo(cx+pW/2, cy-r-10-pH); ctx.closePath(); ctx.fillStyle='#ffffff'; ctx.fill(); }
 
     function currentIndex(){ const n=labels.length, slice=(Math.PI*2)/n; let a=((Math.PI*2-(rotation%(Math.PI*2)))+Math.PI*2)%(Math.PI*2); return Math.floor(a/slice)%n; }
 
-    function spin(){ ensureAudio(); if(spinning||labels.length<2) return; spinning=true; resEl.textContent='Memutar…'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=true; lastTickIdx=currentIndex(); const startRot=rotation; const target=startRot+(6+Math.floor(Math.random()*4))*Math.PI*2+Math.random()*Math.PI*2; const dur=4000; const t0=performance.now();
-      function frame(t){ const p=Math.min(1,(t-t0)/dur); const eased=1-Math.pow(1-p,3); rotation=startRot+(target-startRot)*eased; draw(); const idxNow=currentIndex(); if(idxNow!==lastTickIdx){ playTick(); lastTickIdx=idxNow;} if(p<1){ requestAnimationFrame(frame);} else{ spinning=false; const idx=currentIndex(); const name=labels[idx]; resEl.textContent='Hasil: '+name+' 🎉'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=false; playWin(); showWinner(name, idx); startConfetti(); }}
-      requestAnimationFrame(frame); }
+    function spin(){ ensureAudio(); if(spinning||labels.length<2) return; spinning=true; resEl.textContent='Memutar…'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=true; lastTickIdx=currentIndex(); const startRot=rotation; const target=startRot+(6+Math.floor(Math.random()*4))*Math.PI*2+Math.random()*Math.PI*2; const dur=4000; const t0=performance.now(); function frame(t){ const p=Math.min(1,(t-t0)/dur); const eased=1-Math.pow(1-p,3); rotation=startRot+(target-startRot)*eased; draw(); const idxNow=currentIndex(); if(idxNow!==lastTickIdx){ playTick(); lastTickIdx=idxNow;} if(p<1){ requestAnimationFrame(frame);} else{ spinning=false; const idx=currentIndex(); const name=labels[idx]; resEl.textContent='Hasil: '+name+' 🎉'; spinBtn.disabled=shuffleBtn.disabled=resetBtn.disabled=false; playWin(); showWinner(name, idx); startConfetti(); }} requestAnimationFrame(frame); }
 
     function reset(){ labels=["Kelompok I","Kelompok II","Kelompok III"]; rotation=0; colors=genColors(); draw(); resEl.textContent='Siap diputar…'; }
 
     // ===== CONFETTI =====
     let lastWinnerIndex=-1; let confettiParts=[]; let confettiRAF=null; let confettiEndAt=0;
-    function startConfetti(){ const N=200; confettiParts=[]; for(let i=0;i<N;i++){ confettiParts.push({x:300+(Math.random()-0.5)*80,y:40+Math.random()*40,vx:(Math.random()-0.5)*6,vy:2+Math.random()*4,sz:6+Math.random()*6,rot:Math.random()*Math.PI,vr:(Math.random()-0.5)*0.3,color:`hsl(${Math.floor(Math.random()*360)} 80% 60%)`,life:2.2+Math.random()*0.8});} confettiEndAt=performance.now()+2500; if(confettiRAF) cancelAnimationFrame(confettiRAF); loopConfetti(); }
+    function startConfetti(){ const N=200; confettiParts=[]; for(let i=0;i<N;i++){ confettiParts.push({x:canvas.width/2+(Math.random()-0.5)*80,y:40+Math.random()*40,vx:(Math.random()-0.5)*6,vy:2+Math.random()*4,sz:6+Math.random()*6,rot:Math.random()*Math.PI,vr:(Math.random()-0.5)*0.3,color:`hsl(${Math.floor(Math.random()*360)} 80% 60%)`,life:2.2+Math.random()*0.8});} confettiEndAt=performance.now()+2500; if(confettiRAF) cancelAnimationFrame(confettiRAF); loopConfetti(); }
     function loopConfetti(){ const now=performance.now(); cctx.clearRect(0,0,confetti.width,confetti.height); for(const p of confettiParts){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.08; p.rot+=p.vr; p.life-=1/60; cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot); cctx.fillStyle=p.color; cctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz*0.6); cctx.restore(); } confettiParts=confettiParts.filter(p=>p.y<confetti.height+20&&p.life>0); if(now<confettiEndAt||confettiParts.length){ confettiRAF=requestAnimationFrame(loopConfetti);} else{ cctx.clearRect(0,0,confetti.width,confetti.height); confettiRAF=null;} }
 
     function showWinner(name, idx){ lastWinnerIndex=idx; winnerNameEl.textContent=name; winnerBox.style.display='flex'; }
@@ -149,7 +118,7 @@
     function removeWinner(){ if(lastWinnerIndex>=0){ labels.splice(lastWinnerIndex,1); rotation=0; draw(); closeWinner(); resEl.textContent= labels.length>1 ? 'Pemenang dihapus. Siap putar lagi…' : 'Tinggal 1 item.'; }}
 
     // inisialisasi
-    draw();
+    resizeCanvas();
     spinBtn.addEventListener('click', spin);
     shuffleBtn.addEventListener('click', shuffleColors);
     resetBtn.addEventListener('click', reset);
