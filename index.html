@@ -134,6 +134,11 @@
 
       ctx.lineWidth=2;
 
+      // Estimasi hub untuk posisi teks (agar tak terlalu dekat hub)
+      const hubR_est = Math.max(18, Math.floor(width*0.055));
+      const rimMargin = Math.max(r*0.12, Math.floor(width*0.06)); // jarak aman dari tepi
+      const hubPadding = Math.max(Math.floor(width*0.08), 20);     // jarak aman dari hub
+
       for(let i=0;i<n;i++){
         const a0=i*slice, a1=a0+slice;
 
@@ -142,40 +147,27 @@
         ctx.fillStyle=colors[i%colors.length]; ctx.fill();
         ctx.strokeStyle='#fff'; ctx.stroke();
 
-        // ===== LABEL: horizontal, responsif & DIJAMIN tidak keluar =====
-        const mid = a0 + slice/2;
+        // label: horizontal, responsif, jarak seragam
+        const mid=a0+slice/2;
         ctx.save();
-        ctx.textBaseline = 'middle';
-        ctx.textAlign   = 'center';
+        ctx.textBaseline='middle';
+        let fontSize=Math.max(14, Math.floor(width*0.06));
+        ctx.font=`bold ${fontSize}px Arial, Helvetica, sans-serif`;
+        ctx.fillStyle='#0b0f1a';
+        ctx.textAlign='center';
 
-        let fontSize = Math.max(14, Math.floor(width * 0.06));
-        ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
-        ctx.fillStyle = '#0b0f1a';
+        // radius teks = paling kecil antara (r - margin tepi) tapi paling tidak sejauh hub + padding
+        let textRadius = Math.max(r - rimMargin, hubR_est + hubPadding);
 
-        const text = labels[i] || `Bagian ${i+1}`;
-
-        // batas aman: dari tepi & dari hub
-        const edgeMargin = Math.max(r * 0.10, Math.floor(width * 0.05));  // 10% R atau ~5% W
-        const R = r - edgeMargin;                                          // radius efektif ke tepi
-        const minCenter = Math.max(18, Math.floor(width * 0.055)) + Math.max(16, Math.floor(width * 0.07)); // dari hub
-
-        // kecilkan font jika terlalu lebar
-        let halfW = ctx.measureText(text).width / 2;
-        while (halfW > R * 0.90 && fontSize > 12) {
+        const text=labels[i] || `Bagian ${i+1}`;
+        // kecilkan font jika masih kepanjangan
+        while(ctx.measureText(text).width > r*1.15 && fontSize>12){
           fontSize -= 1;
-          ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
-          halfW = ctx.measureText(text).width / 2;
+          ctx.font=`bold ${fontSize}px Arial, Helvetica, sans-serif`;
         }
 
-        // radius pusat-teks maksimum agar ujung huruf masih di dalam lingkaran
-        const maxCenterRadius = Math.sqrt(Math.max(0, R*R - halfW*halfW));
-        const textRadius = Math.max(minCenter, Math.min(R * 0.95, maxCenterRadius));
-
-        const x = Math.cos(mid) * textRadius;
-        const y = Math.sin(mid) * textRadius;
-        ctx.fillText(text, x, y);
+        ctx.fillText(text, Math.cos(mid)*textRadius, Math.sin(mid)*textRadius);
         ctx.restore();
-        // ===== END LABEL =====
       }
       ctx.restore();
 
