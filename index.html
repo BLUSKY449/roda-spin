@@ -114,25 +114,36 @@
     function shuffleColors(){ colors=colors.sort(()=>Math.random()-0.5); draw(); }
 
     // GAMBAR RODA
-    function draw(){ const width=canvas.width, height=canvas.height; const cx=width/2, cy=height/2; const r=Math.min(cx,cy)-20; ctx.clearRect(0,0,width,height);
-      const n=labels.length, slice=(Math.PI*2)/n; 
-      ctx.save(); ctx.translate(cx,cy); ctx.rotate(rotation - Math.PI/2); ctx.lineWidth=2; // -90 derajat agar label lebih presisi
+    function draw(){
+      const width=canvas.width, height=canvas.height;
+      const cx=width/2, cy=height/2;
+      const r=Math.min(cx,cy)-20;
+      ctx.clearRect(0,0,width,height);
+
+      const n=labels.length, slice=(Math.PI*2)/n;
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(rotation - Math.PI/2);
+
+      ctx.lineWidth=2;
       for(let i=0;i<n;i++){
         const a0=i*slice, a1=a0+slice;
+
         // sector
         ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r,a0,a1); ctx.closePath();
         ctx.fillStyle=colors[i%colors.length]; ctx.fill();
         ctx.strokeStyle='#fff'; ctx.stroke();
-        // label — responsif dan selalu horizontal
+
+        // label — diposisikan agak ke dalam
         const mid=a0+slice/2; ctx.save();
         ctx.textBaseline='middle';
         let fontSize = Math.max(14, Math.floor(width*0.06));
         ctx.font = `bold ${fontSize}px Arial`;
         ctx.fillStyle = '#0b0f1a';
         ctx.textAlign = 'center';
-        const textRadius = r * 0.65;
+        const textRadius = r * 0.55; // lebih ke dalam dari sebelumnya
         const text = labels[i] || `Bagian ${i+1}`;
-        while (ctx.measureText(text).width > r*1.2 && fontSize > 12){
+        while (ctx.measureText(text).width > r*1.1 && fontSize > 12){
           fontSize -= 1;
           ctx.font = `bold ${fontSize}px Arial`;
         }
@@ -140,11 +151,23 @@
         ctx.restore();
       }
       ctx.restore();
+
       // hub
       const hubR = Math.max(16, Math.floor(width*0.05));
-      ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2); ctx.fillStyle='#0b1220'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2, Math.floor(width*0.006)); ctx.stroke();
-      // pointer lebih besar
-      const pW=width*0.25, pH=height*0.28; ctx.beginPath(); ctx.moveTo(cx, cy-r-10); ctx.lineTo(cx-pW/2, cy-r-10-pH); ctx.lineTo(cx+pW/2, cy-r-10-pH); ctx.closePath(); ctx.fillStyle='#ffffff'; ctx.fill(); }
+      ctx.beginPath(); ctx.arc(cx,cy,hubR,0,Math.PI*2);
+      ctx.fillStyle='#0b1220'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2, Math.floor(width*0.006)); ctx.stroke();
+
+      // pointer lebih besar dan putih
+      const pW=width*0.35, pH=height*0.35;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy-r-10);
+      ctx.lineTo(cx - pW/2, cy - r - 10 - pH);
+      ctx.lineTo(cx + pW/2, cy - r - 10 - pH);
+      ctx.closePath();
+      ctx.fillStyle='#ffffff';
+      ctx.fill();
+    }
 
     function currentIndex(){ const n=labels.length, slice=(Math.PI*2)/n; let a=((Math.PI*2-(rotation%(Math.PI*2)))+Math.PI*2)%(Math.PI*2); return Math.floor(a/slice)%n; }
 
